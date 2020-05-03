@@ -2,7 +2,10 @@
     <string name="app_name">COVIDApplication</string>
     <string name="account_hint">手机号</string>
     <string name="password_hint">密码</string>
+    <string name="password_confirm_hint">再次输入密码</string>
     <string name="btn_login">登录</string>
+    <string name="btn_go_register">去注册</string>
     <string name="btn_register">注册</string>
     <string name="login_checkbox">记住我</string>
+    <string name="btn_scan_qr">扫描二维码</string>
 </resources>

@@ -52,12 +52,12 @@
         android:textSize="20sp" />
 
     <Button
-        android:id="@+id/btn_register"
+        android:id="@+id/btn_go_register"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:background="@drawable/bg_btn_1"
-        android:text="@string/btn_register"
+        android:text="@string/btn_go_register"
         android:textSize="20sp" />
 
     <LinearLayout

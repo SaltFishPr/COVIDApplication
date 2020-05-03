@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -12,6 +13,8 @@ import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import com.saltfishpr.covidapplication.data.MyValues;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -61,8 +64,10 @@ public class LoginActivity extends AppCompatActivity {
                     mEditor.putBoolean("remember", false);
                     mEditor.apply();
                 }
-                // 登录行为
-                Toast.makeText(LoginActivity.this, "登录成功", Toast.LENGTH_SHORT).show();
+                // TODO: 登录，向服务器发送登录请求
+                MyValues.account = account;
+                Intent intent = new Intent(LoginActivity.this, CustomActivity.class);
+                startActivity(intent);
             }
         });
 
@@ -79,7 +84,7 @@ public class LoginActivity extends AppCompatActivity {
         mEtAccount = findViewById(R.id.et_account);
         mEtPassword = findViewById(R.id.et_password);
         mBtnLogin = findViewById(R.id.btn_login);
-        mBtnRegister = findViewById(R.id.btn_register);
+        mBtnRegister = findViewById(R.id.btn_go_register);
         mCbRemember = findViewById(R.id.cb_remember);
     }
 }
