@@ -19,7 +19,7 @@ public class ServerDBHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         final String SQL_CREATE_ACCOUNT_TABLE = "CREATE TABLE " + ServerContract.ServerEntry.TABLE_NAME + " (" +
-                ServerContract.ServerEntry.COLUMN_ID_CARD + " TEXT PRIMARY KEY AUTOINCREMENT, " +
+                ServerContract.ServerEntry.COLUMN_ID_CARD + " TEXT PRIMARY KEY, " +
                 ServerContract.ServerEntry.COLUMN_PASSWORD + " TEXT NOT NULL, " +
                 ServerContract.ServerEntry.COLUMN_NAME + " TEXT, " +
                 ServerContract.ServerEntry.COLUMN_UNIT + " INTEGER, " +

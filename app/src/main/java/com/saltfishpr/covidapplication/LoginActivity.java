@@ -40,7 +40,7 @@ public class LoginActivity extends AppCompatActivity {
 
         store = mSharedPreferences.getBoolean("remember", false);
         if (store) {
-            mEtAccount.setText(mSharedPreferences.getString("username", ""));
+            mEtAccount.setText(mSharedPreferences.getString("account", ""));
             mEtPassword.setText(mSharedPreferences.getString("password", ""));
         }
 
@@ -67,12 +67,13 @@ public class LoginActivity extends AppCompatActivity {
                     mEditor.putBoolean("remember", false);
                     mEditor.apply();
                 }
-                // TODO: 登录，向服务器发送登录请求
+                // 登录，向服务器发送登录请求
                 SimulateServer server = new SimulateServer(LoginActivity.this);
                 switch (login(server, account, password)) {
                     case 0:  // 登录成功
                         MyValues.account = account;
                         Intent intent = new Intent(LoginActivity.this, CustomActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
                         startActivity(intent);
                         break;
                     default:

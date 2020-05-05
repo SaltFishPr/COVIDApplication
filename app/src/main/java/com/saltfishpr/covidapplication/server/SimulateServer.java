@@ -15,12 +15,12 @@ public class SimulateServer {
     }
 
     public Cursor queryAccountTable(String id_card) {
-        // TODO: 查询具有id_card的用户，返回游标
-        return mDb.query(ServerContract.ServerEntry.TABLE_NAME, new String[]{"id_card"}, "id_card = ?", new String[]{id_card}, null, null, null);
+        // 查询具有id_card的用户，返回游标
+        return mDb.query(ServerContract.ServerEntry.TABLE_NAME, null, "id_card = ?", new String[]{id_card}, null, null, null);
     }
 
     public void addAccountTable(String idCard, String password) {
-        // TODO: 添加用户
+        // 添加用户
         ContentValues contentValues = new ContentValues();
         contentValues.put(ServerContract.ServerEntry.COLUMN_ID_CARD, idCard);
         contentValues.put(ServerContract.ServerEntry.COLUMN_PASSWORD, password);
@@ -28,7 +28,7 @@ public class SimulateServer {
     }
 
     public void updateAccountTable(String idCard, String password, String name, int unit, int room, int phoneNum) {
-        // TODO: 修改用户信息
+        // 修改用户信息
         ContentValues contentValues = new ContentValues();
         contentValues.put(ServerContract.ServerEntry.COLUMN_PASSWORD, password);
         contentValues.put(ServerContract.ServerEntry.COLUMN_NAME, name);

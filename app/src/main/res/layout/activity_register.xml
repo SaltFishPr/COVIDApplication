@@ -18,7 +18,7 @@
         android:drawableStart="@drawable/ic_account_circle_24px"
         android:drawablePadding="5dp"
         android:hint="@string/account_hint"
-        android:inputType="number"
+        android:inputType="text"
         android:paddingLeft="10dp"
         android:paddingTop="5dp"
         android:paddingRight="10dp"
