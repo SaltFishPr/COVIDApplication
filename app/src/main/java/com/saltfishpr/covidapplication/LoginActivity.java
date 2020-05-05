@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -15,6 +16,8 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.saltfishpr.covidapplication.data.MyValues;
+import com.saltfishpr.covidapplication.server.ServerContract;
+import com.saltfishpr.covidapplication.server.SimulateServer;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -65,9 +68,17 @@ public class LoginActivity extends AppCompatActivity {
                     mEditor.apply();
                 }
                 // TODO: 登录，向服务器发送登录请求
-                MyValues.account = account;
-                Intent intent = new Intent(LoginActivity.this, CustomActivity.class);
-                startActivity(intent);
+                SimulateServer server = new SimulateServer(LoginActivity.this);
+                switch (login(server, account, password)) {
+                    case 0:  // 登录成功
+                        MyValues.account = account;
+                        Intent intent = new Intent(LoginActivity.this, CustomActivity.class);
+                        startActivity(intent);
+                        break;
+                    default:
+                        Toast.makeText(LoginActivity.this, "账号或者密码错误", Toast.LENGTH_SHORT).show();
+                        break;
+                }
             }
         });
 
@@ -86,5 +97,19 @@ public class LoginActivity extends AppCompatActivity {
         mBtnLogin = findViewById(R.id.btn_login);
         mBtnRegister = findViewById(R.id.btn_go_register);
         mCbRemember = findViewById(R.id.cb_remember);
+    }
+
+    private int login(SimulateServer server, String account, String tempPassword) {
+        Cursor cursor = server.queryAccountTable(account);
+        if (cursor.getCount() == 0) {
+            return 1;
+        }
+        cursor.moveToFirst();
+        String password = cursor.getString(cursor.getColumnIndex(ServerContract.ServerEntry.COLUMN_PASSWORD));
+        if (!password.equals(tempPassword)) {
+            return 2;
+        } else {
+            return 0;
+        }
     }
 }

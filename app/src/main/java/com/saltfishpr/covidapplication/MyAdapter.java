@@ -30,8 +30,7 @@ public class MyAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        mCursor.moveToPosition(position);
-
+        mCursor.moveToPosition(getItemCount() - position);
         ((MyItemViewHolder) holder).mTvDate.setText(mCursor.getString(mCursor.getColumnIndex(MyContract.PassEntry.COLUMN_DATE)));
         ((MyItemViewHolder) holder).mTvGate.setText(mCursor.getString(mCursor.getColumnIndex(MyContract.PassEntry.COLUMN_GATE)));
         ((MyItemViewHolder) holder).mTvDirection.setText(mCursor.getString(mCursor.getColumnIndex(MyContract.PassEntry.COLUMN_DIR)));

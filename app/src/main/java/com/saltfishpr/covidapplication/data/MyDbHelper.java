@@ -1,6 +1,7 @@
 package com.saltfishpr.covidapplication.data;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
@@ -28,4 +29,5 @@ public class MyDbHelper extends SQLiteOpenHelper {
         db.execSQL("DROP TABLE IF EXISTS " + MyContract.PassEntry.TABLE_NAME);
         onCreate(db);
     }
+
 }
