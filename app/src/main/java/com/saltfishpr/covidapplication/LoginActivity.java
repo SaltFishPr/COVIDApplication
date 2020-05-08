@@ -1,10 +1,14 @@
 package com.saltfishpr.covidapplication;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.database.Cursor;
+import android.content.pm.PackageManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -16,8 +20,26 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.saltfishpr.covidapplication.data.MyValues;
-import com.saltfishpr.covidapplication.server.ServerContract;
-import com.saltfishpr.covidapplication.server.SimulateServer;
+
+import org.jetbrains.annotations.NotNull;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.FormBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -28,6 +50,7 @@ public class LoginActivity extends AppCompatActivity {
     private CheckBox mCbRemember;
     private SharedPreferences.Editor mEditor;
     private boolean store = false;
+    private final int REQUEST_PERMISSION_CODE = 106;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,10 +61,15 @@ public class LoginActivity extends AppCompatActivity {
         mEditor = mSharedPreferences.edit();
         bindView();
 
+        if (!checkPermission()) {
+            requestPermissions();
+        }
+
         store = mSharedPreferences.getBoolean("remember", false);
         if (store) {
             mEtAccount.setText(mSharedPreferences.getString("account", ""));
             mEtPassword.setText(mSharedPreferences.getString("password", ""));
+            mCbRemember.setChecked(true);
         }
 
         mCbRemember.setOnCheckedChangeListener(new OnCheckedChangeListener() {
@@ -61,25 +89,15 @@ public class LoginActivity extends AppCompatActivity {
                 if (store) {
                     mEditor.putString("account", account);
                     mEditor.putString("password", password);
-                    mEditor.putBoolean("remember", store);
-                    mEditor.apply();
                 } else {
-                    mEditor.putBoolean("remember", false);
-                    mEditor.apply();
+                    mEditor.clear();
                 }
+                mEditor.putBoolean("remember", store);
+                mEditor.apply();
+
                 // 登录，向服务器发送登录请求
-                SimulateServer server = new SimulateServer(LoginActivity.this);
-                switch (login(server, account, password)) {
-                    case 0:  // 登录成功
-                        MyValues.account = account;
-                        Intent intent = new Intent(LoginActivity.this, CustomActivity.class);
-                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(intent);
-                        break;
-                    default:
-                        Toast.makeText(LoginActivity.this, "账号或者密码错误", Toast.LENGTH_SHORT).show();
-                        break;
-                }
+                LoginTask loginTask = new LoginTask();
+                loginTask.execute(account, password);
             }
         });
 
@@ -100,17 +118,94 @@ public class LoginActivity extends AppCompatActivity {
         mCbRemember = findViewById(R.id.cb_remember);
     }
 
-    private int login(SimulateServer server, String account, String tempPassword) {
-        Cursor cursor = server.queryAccountTable(account);
-        if (cursor.getCount() == 0) {
-            return 1;
+    //检查权限
+    private boolean checkPermission() {
+        boolean haveInternetPermission = ContextCompat.checkSelfPermission(LoginActivity.this, Manifest.permission.INTERNET) == PackageManager.PERMISSION_GRANTED;
+        return haveInternetPermission;
+    }
+
+    private void requestPermissions() {
+        String[] permissions = {
+                Manifest.permission.INTERNET
+        };
+        requestPermissions(permissions, REQUEST_PERMISSION_CODE);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_PERMISSION_CODE) {
+            boolean allowAllPermission = false;
+            for (int i = 0; i < grantResults.length; i++) {
+                if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {//被拒绝授权
+                    break;
+                }
+                allowAllPermission = true;
+            }
+            if (!allowAllPermission) {
+                Toast.makeText(this, "该功能需要授权方可使用", Toast.LENGTH_SHORT).show();
+            }
         }
-        cursor.moveToFirst();
-        String password = cursor.getString(cursor.getColumnIndex(ServerContract.ServerEntry.COLUMN_PASSWORD));
-        if (!password.equals(tempPassword)) {
-            return 2;
-        } else {
-            return 0;
+    }
+
+    private class LoginTask extends AsyncTask<String, Void, Integer> {
+        private String response_message;
+        private String tempAccount;
+        private boolean passAuth = false;
+        private int ret_code;
+
+        @Override
+        protected Integer doInBackground(@NotNull String... strings) {
+            String account = strings[0];
+            tempAccount = account;
+            String password = strings[1];
+            String url = "http://49.235.19.174:5000/login";
+
+            OkHttpClient client = new OkHttpClient();
+            RequestBody requestBody = new FormBody.Builder()
+                    .add("account",account)
+                    .add("password",password)
+                    .build();
+            Request request = new Request.Builder()
+                    .url(url)
+                    .post(requestBody)
+                    .build();
+
+            try {
+                Response response = client.newCall(request).execute();
+                response_message = response.body().string();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            Log.i("Response message", response_message);
+            try {
+                JSONObject jsonObject = new JSONObject(response_message);
+                passAuth = (boolean) jsonObject.get("data");
+                ret_code = (int) jsonObject.get("ret_code");
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            return ret_code;
+        }
+
+        @Override
+        protected void onPostExecute(Integer integer) {
+            super.onPostExecute(integer);
+            switch (integer) {
+                case 1:
+                    if (passAuth) {
+                        MyValues.account = tempAccount;
+                        Intent intent = new Intent(LoginActivity.this, CustomActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(intent);
+                    } else {
+                        Toast.makeText(LoginActivity.this, "账号或者密码错误", Toast.LENGTH_SHORT).show();
+                    }
+                    break;
+                default:
+                    Toast.makeText(LoginActivity.this, "连接错误", Toast.LENGTH_SHORT).show();
+                    break;
+            }
         }
     }
 }
