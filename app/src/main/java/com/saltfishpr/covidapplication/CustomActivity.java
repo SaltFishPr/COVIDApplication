@@ -11,7 +11,6 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -21,10 +20,10 @@ import android.widget.Toast;
 
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
-import com.saltfishpr.covidapplication.data.MyContract;
 import com.saltfishpr.covidapplication.data.MyDbHelper;
 import com.saltfishpr.covidapplication.data.MyValues;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -55,22 +54,9 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
         mDb = dbHelper.getWritableDatabase();
 
         mRvInfo.setLayoutManager(new LinearLayoutManager(mContext));
-        mRvInfo.setAdapter(new MyAdapter(mContext, getAllInfo()));
+        mRvInfo.setAdapter(new MyAdapter(mContext, getData()));
 
         mBtnScanQR.setOnClickListener(this);
-
-    }
-
-    private Cursor getAllInfo() {
-        return mDb.query(
-                MyContract.PassEntry.TABLE_NAME,
-                null,
-                null,
-                null,
-                null,
-                null,
-                MyContract.PassEntry._ID
-        );
     }
 
     @Override
@@ -101,13 +87,19 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
         requestPermissions(permissions, REQUEST_PERMISSION_CODE);
     }
 
+    private JSONArray getData() {
+        GetRecordTask getRecordTask = new GetRecordTask();
+        getRecordTask.execute(MyValues.account);
+        return getRecordTask.data;
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQUEST_PERMISSION_CODE) {
             boolean allowAllPermission = true;
             for (int grantResult : grantResults) {
-                if (grantResult != PackageManager.PERMISSION_GRANTED) {//被拒绝授权
+                if (grantResult != PackageManager.PERMISSION_GRANTED) {  // 被拒绝授权
                     allowAllPermission = false;
                     break;
                 }
@@ -125,18 +117,16 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
             if (result.getContents() == null) {
                 Toast.makeText(this, "Cancelled", Toast.LENGTH_LONG).show();
             } else {
-                Toast.makeText(this, "Scanned: " + result.getContents(), Toast.LENGTH_LONG).show();
-
-
-//                testResult.setText(result.getContents());
+                RecordTask recordTask = new RecordTask();
+                recordTask.execute(result.getContents());
             }
         } else {
             super.onActivityResult(requestCode, resultCode, data);
         }
     }
 
-    private class LocationTask extends AsyncTask<String, Void, Integer> {
-        private String location;
+    private class RecordTask extends AsyncTask<String, Void, Integer> {
+        private String gate;
         private String response_message;
         private int ret_code;
 
@@ -144,17 +134,18 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
         protected Integer doInBackground(String... strings) {
             try {
                 JSONObject jsonObject = new JSONObject(strings[0]);
-                location = (String) jsonObject.get("location");
+                gate = (String) jsonObject.get("gate");
             } catch (JSONException e) {
                 e.printStackTrace();
+                return 0;
             }
 
-            String url = "http://49.235.19.174:5000/post";
+            String url = "http://49.235.19.174:5000/post_record";
 
             OkHttpClient client = new OkHttpClient();
             RequestBody requestBody = new FormBody.Builder()
                     .add("account", MyValues.account)
-                    .add("location", location)
+                    .add("gate", gate)
                     .build();
             Request request = new Request.Builder()
                     .url(url)
@@ -178,7 +169,58 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
         @Override
         protected void onPostExecute(Integer integer) {
             super.onPostExecute(integer);
+            switch (integer) {
+                case 1:
+                    break;
+                case 2:
+                    break;
+                default:
+                    break;
+            }
         }
     }
 
+    private class GetRecordTask extends AsyncTask<String, Void, Integer> {
+        private String response_message;
+        private int ret_code;
+        public JSONArray data;
+
+        @Override
+        protected Integer doInBackground(String... strings) {
+            String account = strings[0];
+            String url = "http://49.235.19.174:5000/get_record/" + account;
+            OkHttpClient client = new OkHttpClient();
+            Request request = new Request.Builder().url(url).get().build();
+            try {
+                Response response = client.newCall(request).execute();
+                response_message = response.body().string();
+            } catch (IOException e) {
+                e.printStackTrace();
+                return null;
+            }
+
+            try {
+                data = new JSONObject(response_message).getJSONArray("data");
+                ret_code = new JSONObject(response_message).getInt("ret_code");
+            } catch (JSONException e) {
+                e.printStackTrace();
+                return null;
+            }
+            return ret_code;
+        }
+
+        @Override
+        protected void onPostExecute(Integer integer) {
+            super.onPostExecute(integer);
+            switch (integer) {
+                case 1:
+
+                    break;
+                case 2:
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
 }

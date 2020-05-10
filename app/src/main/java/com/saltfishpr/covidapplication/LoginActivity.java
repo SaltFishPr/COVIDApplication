@@ -176,14 +176,15 @@ public class LoginActivity extends AppCompatActivity {
                 response_message = response.body().string();
             } catch (IOException e) {
                 e.printStackTrace();
+                return null;
             }
-            Log.i("Response message", response_message);
             try {
                 JSONObject jsonObject = new JSONObject(response_message);
                 passAuth = (boolean) jsonObject.get("data");
                 ret_code = (int) jsonObject.get("ret_code");
             } catch (JSONException e) {
                 e.printStackTrace();
+                return null;
             }
             return ret_code;
         }

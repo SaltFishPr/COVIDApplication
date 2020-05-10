@@ -1,7 +1,6 @@
 package com.saltfishpr.covidapplication;
 
 import android.content.Context;
-import android.database.Cursor;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,15 +9,17 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.saltfishpr.covidapplication.data.MyContract;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class MyAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final Context mContext;
-    private final Cursor mCursor;
+    private JSONArray mData;
 
-    public MyAdapter(Context context, Cursor cursor) {
+    public MyAdapter(Context context, JSONArray data) {
         mContext = context;
-        mCursor = cursor;
+        mData = data;
     }
 
     @NonNull
@@ -30,27 +31,41 @@ public class MyAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        mCursor.moveToPosition(getItemCount() - position);
-        ((MyItemViewHolder) holder).mTvDate.setText(mCursor.getString(mCursor.getColumnIndex(MyContract.PassEntry.COLUMN_DATE)));
-        ((MyItemViewHolder) holder).mTvGate.setText(mCursor.getString(mCursor.getColumnIndex(MyContract.PassEntry.COLUMN_GATE)));
-        ((MyItemViewHolder) holder).mTvDirection.setText(mCursor.getString(mCursor.getColumnIndex(MyContract.PassEntry.COLUMN_DIR)));
+        try {
+            JSONObject data = mData.getJSONObject(position);
+            ((MyItemViewHolder) holder).mTvDate.setText(data.getString("time"));
+            ((MyItemViewHolder) holder).mTvGate.setText(data.getString("gate"));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public int getItemCount() {
-        return mCursor.getCount();
+        return mData.length();
+    }
+
+    /**
+     * 更新数据
+     *
+     * @param data 字符串Json数组，包含Json字典
+     */
+    public void swapData(JSONArray data) {
+        mData = null;
+        if (data != null) {
+            mData = data;
+            this.notifyDataSetChanged();
+        }
     }
 
     class MyItemViewHolder extends RecyclerView.ViewHolder {
         final TextView mTvDate;
         final TextView mTvGate;
-        final TextView mTvDirection;
 
         MyItemViewHolder(View view) {
             super(view);
             mTvDate = view.findViewById(R.id.tv_item_1);
             mTvGate = view.findViewById(R.id.tv_item_2);
-            mTvDirection = view.findViewById(R.id.tv_item_3);
         }
     }
 }
