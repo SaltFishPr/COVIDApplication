@@ -11,7 +11,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        // 主界面留空，自动跳转到登陆界面
+        // 主界面留空，播放广告后，自动跳转到登陆界面
         Intent intent = new Intent(MainActivity.this, LoginActivity.class);
         startActivity(intent);
     }

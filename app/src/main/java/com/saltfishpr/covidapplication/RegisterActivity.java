@@ -43,7 +43,7 @@ public class RegisterActivity extends AppCompatActivity {
                     Toast.makeText(RegisterActivity.this, "身份证号码错误", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                if (password.length() <= 6) {
+                if (password.length() < 6) {
                     Toast.makeText(RegisterActivity.this, "密码太短", Toast.LENGTH_SHORT).show();
                 } else {
                     if (password.equals(passwordConfirm)) {

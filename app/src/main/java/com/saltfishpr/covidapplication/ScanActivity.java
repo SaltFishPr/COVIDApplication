@@ -16,6 +16,7 @@ public class ScanActivity extends AppCompatActivity {
     private ImageButton buttonLed;
     private DecoratedBarcodeView barcodeScannerView;
     private boolean bTorch = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -41,7 +42,7 @@ public class ScanActivity extends AppCompatActivity {
         buttonLed.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(bTorch){
+                if (bTorch) {
                     barcodeScannerView.setTorchOff();
                 } else {
                     barcodeScannerView.setTorchOn();
@@ -55,8 +56,6 @@ public class ScanActivity extends AppCompatActivity {
     }
 
 
-
-
     /**
      * Override to use a different layout.
      *
@@ -64,7 +63,7 @@ public class ScanActivity extends AppCompatActivity {
      */
     protected DecoratedBarcodeView initializeContent() {
         setContentView(R.layout.activity_scan);
-        return (DecoratedBarcodeView)findViewById(R.id.dbv);
+        return (DecoratedBarcodeView) findViewById(R.id.dbv);
     }
 
     @Override
