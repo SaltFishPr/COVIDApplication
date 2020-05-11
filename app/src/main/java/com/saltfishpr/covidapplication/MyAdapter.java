@@ -1,6 +1,7 @@
 package com.saltfishpr.covidapplication;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,6 +34,7 @@ public class MyAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         try {
             JSONObject data = mData.getJSONObject(position);
+            Log.i("data: ", mData.getString(position));
             ((MyItemViewHolder) holder).mTvDate.setText(data.getString("time"));
             ((MyItemViewHolder) holder).mTvGate.setText(data.getString("gate"));
         } catch (JSONException e) {
@@ -42,6 +44,9 @@ public class MyAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @Override
     public int getItemCount() {
+        if (mData == null){
+            return 0;
+        }
         return mData.length();
     }
 

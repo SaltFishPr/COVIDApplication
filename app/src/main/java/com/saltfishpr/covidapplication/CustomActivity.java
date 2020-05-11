@@ -11,16 +11,15 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
-import com.saltfishpr.covidapplication.data.MyDbHelper;
 import com.saltfishpr.covidapplication.data.MyValues;
 
 import org.json.JSONArray;
@@ -38,7 +37,8 @@ import okhttp3.Response;
 public class CustomActivity extends AppCompatActivity implements View.OnClickListener {
     private RecyclerView mRvInfo;
     private Button mBtnScanQR;
-    private SQLiteDatabase mDb;
+    private Button mBtnRefresh;
+    private MyAdapter myAdapter;
     private int REQUEST_PERMISSION_CODE = 108;
 
     @Override
@@ -49,14 +49,20 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
         Context mContext = this;
         mRvInfo = findViewById(R.id.rv_info);
         mBtnScanQR = findViewById(R.id.btn_scan);
-
-        MyDbHelper dbHelper = new MyDbHelper(mContext);
-        mDb = dbHelper.getWritableDatabase();
+        mBtnRefresh = findViewById(R.id.btn_refresh);
 
         mRvInfo.setLayoutManager(new LinearLayoutManager(mContext));
-        mRvInfo.setAdapter(new MyAdapter(mContext, getData()));
+        myAdapter = new MyAdapter(mContext, getData());
+        mRvInfo.setAdapter(myAdapter);
 
         mBtnScanQR.setOnClickListener(this);
+        mBtnRefresh.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                myAdapter.swapData(getData());
+            }
+        });
+        myAdapter.swapData(getData());
     }
 
     @Override
@@ -72,13 +78,20 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
         }
     }
 
-    //检查权限
+    /**
+     * 检查权限
+     *
+     * @return 是否授权
+     */
     private boolean checkPermission() {
         boolean haveCameraPermission = ContextCompat.checkSelfPermission(CustomActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
         boolean haveVibratePermission = ContextCompat.checkSelfPermission(CustomActivity.this, Manifest.permission.VIBRATE) == PackageManager.PERMISSION_GRANTED;
         return haveCameraPermission && haveVibratePermission;
     }
 
+    /**
+     * 请求权限
+     */
     private void requestPermissions() {
         String[] permissions = {
                 Manifest.permission.CAMERA,
@@ -90,7 +103,7 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
     private JSONArray getData() {
         GetRecordTask getRecordTask = new GetRecordTask();
         getRecordTask.execute(MyValues.account);
-        return getRecordTask.data;
+        return MyValues.data;
     }
 
     @Override
@@ -117,29 +130,27 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
             if (result.getContents() == null) {
                 Toast.makeText(this, "Cancelled", Toast.LENGTH_LONG).show();
             } else {
-                RecordTask recordTask = new RecordTask();
-                recordTask.execute(result.getContents());
+                PostRecordTask postRecordTask = new PostRecordTask();
+                postRecordTask.execute(result.getContents());
             }
         } else {
             super.onActivityResult(requestCode, resultCode, data);
         }
     }
 
-    private class RecordTask extends AsyncTask<String, Void, Integer> {
-        private String gate;
-        private String response_message;
-        private int ret_code;
+    private class PostRecordTask extends AsyncTask<String, Void, Integer> {
+        private String result;
 
         @Override
         protected Integer doInBackground(String... strings) {
+            String gate;
             try {
                 JSONObject jsonObject = new JSONObject(strings[0]);
-                gate = (String) jsonObject.get("gate");
+                gate = jsonObject.getString("gate");
             } catch (JSONException e) {
                 e.printStackTrace();
-                return 0;
+                return 2;
             }
-
             String url = "http://49.235.19.174:5000/post_record";
 
             OkHttpClient client = new OkHttpClient();
@@ -151,17 +162,22 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
                     .url(url)
                     .post(requestBody)
                     .build();
+            String response_message;
             try {
                 Response response = client.newCall(request).execute();
                 response_message = response.body().string();
             } catch (IOException e) {
                 e.printStackTrace();
+                return 3;
             }
+            int ret_code;
             try {
                 JSONObject jsonObject = new JSONObject(response_message);
-                ret_code = (int) jsonObject.get("ret_code");
+                result = jsonObject.getString("result");
+                ret_code = jsonObject.getInt("ret_code");
             } catch (JSONException e) {
                 e.printStackTrace();
+                return 2;
             }
             return ret_code;
         }
@@ -171,8 +187,17 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
             super.onPostExecute(integer);
             switch (integer) {
                 case 1:
+                    if (result.equals("permit")) {
+                        Toast.makeText(CustomActivity.this, "准予通行", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(CustomActivity.this, "通行次数已使用", Toast.LENGTH_SHORT).show();
+                    }
                     break;
                 case 2:
+                    Toast.makeText(CustomActivity.this, "服务器错误", Toast.LENGTH_SHORT).show();
+                    break;
+                case 3:
+                    Toast.makeText(CustomActivity.this, "网络错误", Toast.LENGTH_SHORT).show();
                     break;
                 default:
                     break;
@@ -181,9 +206,7 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
     }
 
     private class GetRecordTask extends AsyncTask<String, Void, Integer> {
-        private String response_message;
-        private int ret_code;
-        public JSONArray data;
+        JSONArray data;
 
         @Override
         protected Integer doInBackground(String... strings) {
@@ -191,20 +214,23 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
             String url = "http://49.235.19.174:5000/get_record/" + account;
             OkHttpClient client = new OkHttpClient();
             Request request = new Request.Builder().url(url).get().build();
+            String response_message;
             try {
                 Response response = client.newCall(request).execute();
                 response_message = response.body().string();
             } catch (IOException e) {
                 e.printStackTrace();
-                return null;
+                return 3;
             }
 
+            int ret_code;
             try {
                 data = new JSONObject(response_message).getJSONArray("data");
+                Log.i("data", String.valueOf(data));
                 ret_code = new JSONObject(response_message).getInt("ret_code");
             } catch (JSONException e) {
                 e.printStackTrace();
-                return null;
+                return 2;
             }
             return ret_code;
         }
@@ -214,9 +240,13 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
             super.onPostExecute(integer);
             switch (integer) {
                 case 1:
-
+                    MyValues.data = data;
                     break;
                 case 2:
+                    Toast.makeText(CustomActivity.this, "服务器错误", Toast.LENGTH_SHORT).show();
+                    break;
+                case 3:
+                    Toast.makeText(CustomActivity.this, "网络错误", Toast.LENGTH_SHORT).show();
                     break;
                 default:
                     break;

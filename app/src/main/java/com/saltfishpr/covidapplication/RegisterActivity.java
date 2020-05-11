@@ -88,6 +88,7 @@ public class RegisterActivity extends AppCompatActivity {
                 response_message = response.body().string();
             } catch (IOException e) {
                 e.printStackTrace();
+                return 3;
             }
 
             try {
@@ -95,6 +96,7 @@ public class RegisterActivity extends AppCompatActivity {
                 ret_code = (int) jsonObject.get("ret_code");
             } catch (JSONException e) {
                 e.printStackTrace();
+                return 2;
             }
             return ret_code;
         }

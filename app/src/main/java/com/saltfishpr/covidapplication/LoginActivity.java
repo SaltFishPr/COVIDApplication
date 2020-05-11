@@ -176,7 +176,7 @@ public class LoginActivity extends AppCompatActivity {
                 response_message = response.body().string();
             } catch (IOException e) {
                 e.printStackTrace();
-                return null;
+                return 3;
             }
             try {
                 JSONObject jsonObject = new JSONObject(response_message);
@@ -184,7 +184,7 @@ public class LoginActivity extends AppCompatActivity {
                 ret_code = (int) jsonObject.get("ret_code");
             } catch (JSONException e) {
                 e.printStackTrace();
-                return null;
+                return 2;
             }
             return ret_code;
         }
