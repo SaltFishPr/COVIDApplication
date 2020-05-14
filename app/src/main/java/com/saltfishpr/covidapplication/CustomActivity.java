@@ -3,17 +3,27 @@ package com.saltfishpr.covidapplication;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -21,6 +31,7 @@ import android.widget.Toast;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.saltfishpr.covidapplication.data.MyValues;
+import com.saltfishpr.covidapplication.services.MyJobService;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -35,11 +46,14 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class CustomActivity extends AppCompatActivity implements View.OnClickListener {
+    private static final String CHANNEL_ID = "33333333";
     private RecyclerView mRvInfo;
     private Button mBtnScanQR;
     private Button mBtnRefresh;
+    private Button mBtnTest;
     private MyAdapter myAdapter;
     private int REQUEST_PERMISSION_CODE = 108;
+    private Context mContext = CustomActivity.this;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,31 +64,71 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
         mRvInfo = findViewById(R.id.rv_info);
         mBtnScanQR = findViewById(R.id.btn_scan);
         mBtnRefresh = findViewById(R.id.btn_refresh);
+        mBtnTest = findViewById(R.id.btn_test);
 
         mRvInfo.setLayoutManager(new LinearLayoutManager(mContext));
         myAdapter = new MyAdapter(mContext, getData());
         mRvInfo.setAdapter(myAdapter);
 
         mBtnScanQR.setOnClickListener(this);
-        mBtnRefresh.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                myAdapter.swapData(getData());
-            }
-        });
+        mBtnRefresh.setOnClickListener(this);
+        mBtnTest.setOnClickListener(this);
         myAdapter.swapData(getData());
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int itemId = item.getItemId();
+        if (itemId == R.id.activity_setting) {
+            Context context = CustomActivity.this;
+            Intent intent = new Intent(context, SettingActivity.class);
+            startActivity(intent);
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
     public void onClick(View v) {
-        if (v.getId() == R.id.btn_scan) {
-            if (!checkPermission()) {  // 请求权限
-                requestPermissions();
+        switch (v.getId()) {
+            case R.id.btn_scan: {
+                if (!checkPermission()) {  // 请求权限
+                    requestPermissions();
+                }
+                IntentIntegrator intentIntegrator = new IntentIntegrator(CustomActivity.this);
+                intentIntegrator.setBeepEnabled(true);
+                intentIntegrator.setCaptureActivity(ScanActivity.class);
+                intentIntegrator.initiateScan();
+                break;
             }
-            IntentIntegrator intentIntegrator = new IntentIntegrator(CustomActivity.this);
-            intentIntegrator.setBeepEnabled(true);
-            intentIntegrator.setCaptureActivity(ScanActivity.class);
-            intentIntegrator.initiateScan();
+            case R.id.btn_refresh: {
+                myAdapter.swapData(getData());
+                break;
+            }
+            case R.id.btn_test: {
+
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+    private void createNotificationChannel() {
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "my_channel", importance);
+            // Register the channel with the system; you can't change the importance
+            // or other notification behaviors after this
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
         }
     }
 
@@ -188,7 +242,19 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
             switch (integer) {
                 case 1:
                     if (result.equals("permit")) {
-                        Toast.makeText(CustomActivity.this, "准予通行", Toast.LENGTH_SHORT).show();
+                        makeNotification();
+                        // 设置JobService用于时间提醒
+                        JobScheduler jobScheduler = (JobScheduler) getSystemService(Context.JOB_SCHEDULER_SERVICE);
+                        JobInfo.Builder builder = new JobInfo.Builder(1,
+                                new ComponentName(getPackageName(), MyJobService.class.getName()));
+                        builder.setMinimumLatency(6300000L); //执行的最小延迟时间
+                        builder.setOverrideDeadline(6300000L);  //执行的最长延时时间
+                        builder.setBackoffCriteria(JobInfo.DEFAULT_INITIAL_BACKOFF_MILLIS, JobInfo.BACKOFF_POLICY_LINEAR);//线性重试方案
+                        builder.setPersisted(true);  // 设置设备重启时，执行该任务
+                        builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
+                        builder.setRequiresCharging(true); // 当插入充电器，执行该任务
+                        JobInfo info = builder.build();
+                        jobScheduler.schedule(info); //开始定时执行该系统任务
                     } else {
                         Toast.makeText(CustomActivity.this, "通行次数已使用", Toast.LENGTH_SHORT).show();
                     }
@@ -203,6 +269,23 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
                     break;
             }
         }
+    }
+
+    public void makeNotification() {
+        Context context = CustomActivity.this;
+        NotificationManager notificationManager = (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
+        Intent intent = new Intent(context, CustomActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent, 0);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_account_circle_24px)
+                .setContentTitle("准予出行")
+                .setContentText("请在2小时内返回喔")
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true);
+        notificationManager.notify(1, builder.build());
     }
 
     private class GetRecordTask extends AsyncTask<String, Void, Integer> {
