@@ -10,6 +10,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.saltfishpr.covidapplication.data.MyContract;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -72,7 +74,7 @@ public class RegisterActivity extends AppCompatActivity {
         protected Integer doInBackground(String... strings) {
             String account = strings[0];
             String password = strings[1];
-            String url = "http://49.235.19.174:5000/register";
+            String url = MyContract.SERVER_URL + "register";
             OkHttpClient client = new OkHttpClient();
             RequestBody requestBody = new FormBody.Builder()
                     .add("account", account)

@@ -14,13 +14,18 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -30,6 +35,7 @@ import android.widget.Toast;
 
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
+import com.saltfishpr.covidapplication.data.MyContract;
 import com.saltfishpr.covidapplication.data.MyValues;
 import com.saltfishpr.covidapplication.services.MyJobService;
 
@@ -52,14 +58,16 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
     private Button mBtnRefresh;
     private Button mBtnTest;
     private MyAdapter myAdapter;
+    private MyReceiver mReceiver;
     private int REQUEST_PERMISSION_CODE = 108;
-    private Context mContext = CustomActivity.this;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_custom);
-
+        if (!checkPermission()) {  // 请求权限
+            requestPermissions();
+        }
         Context mContext = this;
         mRvInfo = findViewById(R.id.rv_info);
         mBtnScanQR = findViewById(R.id.btn_scan);
@@ -89,17 +97,36 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
             Context context = CustomActivity.this;
             Intent intent = new Intent(context, SettingActivity.class);
             startActivity(intent);
+        } else if (itemId == R.id.activity_friends) {
+            Context context = CustomActivity.this;
+            Intent intent = new Intent(context, FriendsActivity.class);
+            startActivity(intent);
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mReceiver = new MyReceiver();
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Intent.ACTION_POWER_CONNECTED);
+        intentFilter.addAction(Intent.ACTION_POWER_DISCONNECTED);
+        // 注册广播接收器
+        registerReceiver(mReceiver, intentFilter);
+    }
+
+    @Override
+    protected void onPause() {
+        // 注销广播接收器
+        unregisterReceiver(mReceiver);
+        super.onPause();
     }
 
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_scan: {
-                if (!checkPermission()) {  // 请求权限
-                    requestPermissions();
-                }
                 IntentIntegrator intentIntegrator = new IntentIntegrator(CustomActivity.this);
                 intentIntegrator.setBeepEnabled(true);
                 intentIntegrator.setCaptureActivity(ScanActivity.class);
@@ -119,19 +146,6 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
         }
     }
 
-    private void createNotificationChannel() {
-        // Create the NotificationChannel, but only on API 26+ because
-        // the NotificationChannel class is new and not in the support library
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            int importance = NotificationManager.IMPORTANCE_DEFAULT;
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "my_channel", importance);
-            // Register the channel with the system; you can't change the importance
-            // or other notification behaviors after this
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
-        }
-    }
-
     /**
      * 检查权限
      *
@@ -140,7 +154,9 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
     private boolean checkPermission() {
         boolean haveCameraPermission = ContextCompat.checkSelfPermission(CustomActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
         boolean haveVibratePermission = ContextCompat.checkSelfPermission(CustomActivity.this, Manifest.permission.VIBRATE) == PackageManager.PERMISSION_GRANTED;
-        return haveCameraPermission && haveVibratePermission;
+        boolean haveReadContactsPermission = ContextCompat.checkSelfPermission(CustomActivity.this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED;
+        boolean haveWriteContactsPermission = ContextCompat.checkSelfPermission(CustomActivity.this, Manifest.permission.WRITE_CONTACTS) == PackageManager.PERMISSION_GRANTED;
+        return haveCameraPermission && haveVibratePermission && haveReadContactsPermission && haveWriteContactsPermission;
     }
 
     /**
@@ -149,7 +165,9 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
     private void requestPermissions() {
         String[] permissions = {
                 Manifest.permission.CAMERA,
-                Manifest.permission.VIBRATE
+                Manifest.permission.VIBRATE,
+                Manifest.permission.READ_CONTACTS,
+                Manifest.permission.WRITE_CONTACTS
         };
         requestPermissions(permissions, REQUEST_PERMISSION_CODE);
     }
@@ -192,6 +210,19 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
         }
     }
 
+    public class MyReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            assert action != null;
+            if (action.equals(Intent.ACTION_POWER_CONNECTED)) {
+                Toast.makeText(CustomActivity.this, "正在充电", Toast.LENGTH_SHORT).show();
+            } else if (action.equals(Intent.ACTION_POWER_DISCONNECTED)) {
+                Toast.makeText(CustomActivity.this, "停止充电", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
     private class PostRecordTask extends AsyncTask<String, Void, Integer> {
         private String result;
 
@@ -205,7 +236,7 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
                 e.printStackTrace();
                 return 2;
             }
-            String url = "http://49.235.19.174:5000/post_record";
+            String url = MyContract.SERVER_URL + "post_record";
 
             OkHttpClient client = new OkHttpClient();
             RequestBody requestBody = new FormBody.Builder()
@@ -271,30 +302,13 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
         }
     }
 
-    public void makeNotification() {
-        Context context = CustomActivity.this;
-        NotificationManager notificationManager = (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
-        Intent intent = new Intent(context, CustomActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent, 0);
-
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_account_circle_24px)
-                .setContentTitle("准予出行")
-                .setContentText("请在2小时内返回喔")
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setContentIntent(pendingIntent)
-                .setAutoCancel(true);
-        notificationManager.notify(1, builder.build());
-    }
-
     private class GetRecordTask extends AsyncTask<String, Void, Integer> {
         JSONArray data;
 
         @Override
         protected Integer doInBackground(String... strings) {
             String account = strings[0];
-            String url = "http://49.235.19.174:5000/get_record/" + account;
+            String url = MyContract.SERVER_URL + "get_record/" + account;
             OkHttpClient client = new OkHttpClient();
             Request request = new Request.Builder().url(url).get().build();
             String response_message;
@@ -335,5 +349,22 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
                     break;
             }
         }
+    }
+
+    public void makeNotification() {
+        Context context = CustomActivity.this;
+        NotificationManager notificationManager = (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
+        Intent intent = new Intent(context, CustomActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent, 0);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_account_circle_24px)
+                .setContentTitle("准予出行")
+                .setContentText("请在2小时内返回喔")
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true);
+        notificationManager.notify(1, builder.build());
     }
 }

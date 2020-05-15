@@ -19,6 +19,7 @@ import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.saltfishpr.covidapplication.data.MyContract;
 import com.saltfishpr.covidapplication.data.MyValues;
 
 import org.jetbrains.annotations.NotNull;
@@ -159,12 +160,12 @@ public class LoginActivity extends AppCompatActivity {
             String account = strings[0];
             tempAccount = account;
             String password = strings[1];
-            String url = "http://49.235.19.174:5000/login";
+            String url = MyContract.SERVER_URL + "login";
 
             OkHttpClient client = new OkHttpClient();
             RequestBody requestBody = new FormBody.Builder()
-                    .add("account",account)
-                    .add("password",password)
+                    .add("account", account)
+                    .add("password", password)
                     .build();
             Request request = new Request.Builder()
                     .url(url)

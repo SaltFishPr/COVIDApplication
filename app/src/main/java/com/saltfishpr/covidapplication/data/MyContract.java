@@ -3,8 +3,10 @@ package com.saltfishpr.covidapplication.data;
 import android.net.Uri;
 import android.provider.BaseColumns;
 
-public class MyContract {
+import java.sql.Statement;
 
+public class MyContract {
+    public static final String SERVER_URL = "http://49.235.19.174:5000/";
     public static final String CONTENT_AUTHORITY = "com.saltfishpr.covidapplication";
     public static final Uri BASE_CONTENT_URI = Uri.parse("content://" + CONTENT_AUTHORITY);
     public static final String PATH_PASS_DATA = "pass";
