@@ -8,4 +8,12 @@
     <string name="btn_register">注册</string>
     <string name="login_checkbox">记住我</string>
     <string name="btn_scan_qr">扫描二维码</string>
+    <string name="pref_show_true">开启</string>
+    <string name="pref_show_false">关闭</string>
+    <string name="pref_notification">notification</string>
+    <string name="pref_show_bass_label">通知</string>
+    <string name="pref_default_account">33333333</string>
+    <string name="pref_test_account">test</string>
+    <string name="pref_your_account">33333333</string>
+
 </resources>

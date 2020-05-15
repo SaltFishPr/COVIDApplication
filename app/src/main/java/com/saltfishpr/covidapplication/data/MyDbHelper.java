@@ -1,7 +1,6 @@
 package com.saltfishpr.covidapplication.data;
 
 import android.content.Context;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
@@ -15,18 +14,17 @@ public class MyDbHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        final String SQL_CREATE_PASS_TABLE = "CREATE TABLE " + MyContract.PassEntry.TABLE_NAME + " (" +
-                MyContract.PassEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                MyContract.PassEntry.COLUMN_DATE + " INTEGER NOT NULL, " +
-                MyContract.PassEntry.COLUMN_GATE + " INTEGER NOT NULL, " +
-                MyContract.PassEntry.COLUMN_DIR + " INTEGER NOT NULL " +
+        final String SQL_CREATE_PASS_TABLE = "CREATE TABLE " + MyContract.AccountEntry.TABLE_NAME + " (" +
+                MyContract.AccountEntry.COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                MyContract.AccountEntry.COLUMN_ID_CARD + " TEXT NOT NULL, " +
+                MyContract.AccountEntry.COLUMN_PASSWORD + " TEXT NOT NULL " +
                 ");";
         db.execSQL(SQL_CREATE_PASS_TABLE);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS " + MyContract.PassEntry.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + MyContract.AccountEntry.TABLE_NAME);
         onCreate(db);
     }
 

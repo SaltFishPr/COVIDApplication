@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <CheckBoxPreference
+        android:defaultValue="@bool/pref_show_notification"
+        android:key="@string/pref_notification"
+        android:summaryOff="@string/pref_show_false"
+        android:summaryOn="@string/pref_show_true"
+        android:title="@string/pref_show_bass_label" />
+</PreferenceScreen>

@@ -94,9 +94,10 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int itemId = item.getItemId();
         if (itemId == R.id.activity_setting) {
-            Context context = CustomActivity.this;
-            Intent intent = new Intent(context, SettingActivity.class);
-            startActivity(intent);
+            Toast.makeText(this, "功能尚未完成", Toast.LENGTH_SHORT).show();
+//            Context context = CustomActivity.this;
+//            Intent intent = new Intent(context, SettingActivity.class);
+//            startActivity(intent);
         } else if (itemId == R.id.activity_friends) {
             Context context = CustomActivity.this;
             Intent intent = new Intent(context, FriendsActivity.class);

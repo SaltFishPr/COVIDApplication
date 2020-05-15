@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="pref_account_labels">
+        <item>@string/pref_default_account</item>
+        <item>@string/pref_test_account</item>
+        <item>@string/pref_your_account</item>
+    </string-array>
+</resources>
