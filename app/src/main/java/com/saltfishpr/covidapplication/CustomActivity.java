@@ -9,23 +9,18 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
-import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
-import android.provider.ContactsContract;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -51,6 +46,10 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
+/**
+ * 用户界面
+ * 用户通行时的验证，通行信息的显示，操作的主要界面。
+ */
 public class CustomActivity extends AppCompatActivity implements View.OnClickListener {
     private static final String CHANNEL_ID = "33333333";
     private RecyclerView mRvInfo;
@@ -73,6 +72,7 @@ public class CustomActivity extends AppCompatActivity implements View.OnClickLis
         mBtnScanQR = findViewById(R.id.btn_scan);
         mBtnRefresh = findViewById(R.id.btn_refresh);
         mBtnTest = findViewById(R.id.btn_test);
+        mBtnTest.setVisibility(View.INVISIBLE);
 
         mRvInfo.setLayoutManager(new LinearLayoutManager(mContext));
         myAdapter = new MyAdapter(mContext, getData());

@@ -42,6 +42,10 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
+/**
+ * 登录界面
+ * 进行登录操作与身份验证
+ */
 public class LoginActivity extends AppCompatActivity {
 
     private EditText mEtAccount;

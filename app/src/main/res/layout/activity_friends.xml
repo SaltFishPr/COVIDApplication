@@ -11,30 +11,33 @@
         android:id="@+id/et_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/bg_et_1"
-        android:textSize="24sp"
         android:autofillHints="Name"
-        android:inputType="text" />
+        android:background="@drawable/bg_et_1"
+        android:hint="Name"
+        android:inputType="text"
+        android:textSize="24sp" />
 
     <EditText
         android:id="@+id/et_phone_number"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:background="@drawable/bg_et_1"
-        android:textSize="24sp"
         android:autofillHints="Phone Number"
-        android:inputType="phone" />
+        android:background="@drawable/bg_et_1"
+        android:hint="Phone"
+        android:inputType="phone"
+        android:textSize="24sp" />
 
     <EditText
         android:id="@+id/et_email"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:background="@drawable/bg_et_1"
-        android:textSize="24sp"
         android:autofillHints="Email"
-        android:inputType="textEmailAddress" />
+        android:background="@drawable/bg_et_1"
+        android:hint="Email"
+        android:inputType="textEmailAddress"
+        android:textSize="24sp" />
 
     <Button
         android:id="@+id/btn_show_friends"
